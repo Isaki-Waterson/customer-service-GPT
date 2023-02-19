@@ -1,0 +1,72 @@
+import openai
+import re
+
+# Authenticate with OpenAI API
+openai.api_key = "INSERT_YOUR_API_KEY_HERE"
+
+# Define a function to generate a single response using the OpenAI GPT-3 model
+def generate_response(prompt):
+    # Set up the prompt with some context and a question
+    prompt = f"Customer: {prompt}\nAI: "
+
+    # Generate the response using the OpenAI GPT-3 model
+    response = openai.Completion.create(
+        engine="davinci",
+        prompt=prompt,
+        max_tokens=1024,
+        n=1,
+        stop=None,
+        temperature=0.5,
+    )
+
+    # Extract the generated response from the API response
+    response_text = response.choices[0].text.strip()
+
+    # Remove any text after a new line character
+    response_text = re.sub(r"\n.*", "", response_text)
+
+    return response_text
+
+# Define a function to customize the chatbot response
+def personalize_response(response, user_data):
+    # Add user-specific information to the response, if available
+    if user_data:
+        response = re.sub(r"\byour\b", user_data["name"] + "'s", response)
+
+    return response
+
+# Define a function to handle context across multiple inputs
+class Chatbot:
+    def __init__(self):
+        self.context = {}
+
+    def process_input(self, input_text, user_data=None):
+        # Add user-specific context to the input, if available
+        if user_data:
+            input_text = f"{user_data['name']}: {input_text}"
+
+        # Add previous context to the input, if available
+        if self.context:
+            input_text = f"{self.context['prompt']}{input_text}"
+
+        # Generate a response only if necessary
+        if "responses" not in self.context:
+            response = generate_response(input_text)
+            self.context["responses"] = [response]
+
+        # Use a response from the list and remove it to avoid duplicate responses
+        response = self.context["responses"].pop(0)
+
+        # Customize the response, if applicable
+        response = personalize_response(response, user_data)
+
+        # Store context for future inputs
+        self.context["prompt"] = f"Customer: {input_text}\nAI: {response}"
+
+        return response
+
+# Test the chatbot with a sample input
+input_text = "I have a problem with my order"
+chatbot = Chatbot()
+response = chatbot.process_input(input_text)
+print(response)
