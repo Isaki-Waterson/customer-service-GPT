@@ -1,0 +1,33 @@
+import openai
+import re
+
+# Authenticate with OpenAI API
+openai.api_key = "INSERT_YOUR_API_KEY_HERE"
+
+# Define a function to generate responses using the OpenAI GPT-3 model
+def generate_response(prompt):
+    # Set up the prompt with some context and a question
+    prompt = f"Customer: {prompt}\nAI: "
+
+    # Generate the response using the OpenAI GPT-3 model
+    response = openai.Completion.create(
+        engine="davinci",
+        prompt=prompt,
+        max_tokens=1024,
+        n=1,
+        stop=None,
+        temperature=0.5,
+    )
+
+    # Extract the generated response from the API response
+    response_text = response.choices[0].text.strip()
+
+    # Remove any text after a new line character
+    response_text = re.sub(r"\n.*", "", response_text)
+
+    return response_text
+
+# Test the chatbot with a sample input
+input_text = "I have a problem with my order"
+response = generate_response(input_text)
+print(response)
